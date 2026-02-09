@@ -131,7 +131,7 @@ utc_time = pd.to_datetime(date + time, format="%Y%m%d%H%M%S", utc=True)
 local_time = utc_time.tz_convert("Europe/Berlin")
 footer_time_str = local_time.strftime("%d.%m.%Y %H:%M")
 
-output_filename = f"radolan_rw_{local_time.strftime('%Y%m%d_%H%M')}.png"
+output_filename = f"radolan_sf_{local_time.strftime('%Y%m%d_%H%M')}.png"
 output_path = os.path.join(OUTPUT_DIR, output_filename)
 
 # ======================
@@ -319,7 +319,7 @@ footer_ax = fig.add_axes(
 )
 footer_ax.axis("off")
 
-footer_ax.text(0.01, 0.85, "Niederschlag, 24 Std (mm)",
+footer_ax.text(0.01, 0.85, "Niederschlag, 24Std (mm)",
                fontsize=12, fontweight="bold", ha="left", va="top")
 footer_ax.text(0.01, 0.55, "Daten: Deutscher Wetterdienst",
                fontsize=8, ha="left", va="top")
