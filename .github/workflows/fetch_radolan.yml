@@ -1,0 +1,87 @@
+name: Radar RW Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate_pngs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download HDF5 radar data
+        run:
+          python download/download-sf.py
+
+      - name: Generate PNGs
+        run: |
+          mkdir -p output/radar
+          python scripts/generate_pngs.py
+
+      - name: Upload PNGs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-sf-pngs
+          path: output/radar
+
+  deploy_to_r2:
+    runs-on: ubuntu-latest
+    needs: [generate_pngs]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+  
+      - name: Download PNGs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: radar-sf-pngs
+          path: output/radar_raw
+  
+      - name: Prepare deploy folder
+        run: |
+         mkdir -p output/radar_deploy/radar
+          # Nimm die neueste PNG
+          latest_png=$(ls -1t output/radar_raw/*.png | head -n 1)
+          cp "$latest_png" output/radar_deploy/radar/
+          # Optional: metadata.json in deploy folder
+          if [ -f output/radar_raw/metadata.json ]; then
+            cp output/radar_raw/metadata.json output/radar_deploy/
+          fi
+
+      - name: Set DATE variable
+        run: echo "DATE=$(date -u +%Y%m%d)" >> $GITHUB_ENV
+  
+      - name: Generate Metadata
+        run: |
+          python scripts/generate_metadata.py output/radar_deploy/radar radar-sf ${{ env.DATE }}
+  
+      - name: Clean old PNGs on R2
+        run: |
+          # Lösche alles im Unterordner radar-sf/radar/ vorher
+          aws s3 rm s3://${{ secrets.R2_BUCKET }}/radar-sf/radar/ --recursive \
+            --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  
+      - name: Upload current run to R2
+        run: |
+          # Lade die aktuelle PNG und metadata.json hoch
+          aws s3 cp output/radar_deploy/radar/ s3://${{ secrets.R2_BUCKET }}/radar-sf/radar/ \
+            --recursive \
+            --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+          aws s3 cp output/radar_deploy/metadata.json s3://${{ secrets.R2_BUCKET }}/radar-sf/metadata.json \
+            --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
