@@ -8,10 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -28,7 +28,7 @@ jobs:
           python scripts/generate_pngs.py
 
       - name: Upload PNGs artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v8
         with:
           name: radar-sf-pngs
           path: output/radar
@@ -38,10 +38,10 @@ jobs:
     needs: [generate_pngs]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
   
       - name: Download PNGs artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: radar-sf-pngs
           path: output/radar_raw
