@@ -28,7 +28,7 @@ jobs:
           python scripts/generate_pngs.py
 
       - name: Upload PNGs artifact
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v6
         with:
           name: radar-sf-pngs
           path: output/radar
@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v6
   
       - name: Download PNGs artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v6
         with:
           name: radar-sf-pngs
           path: output/radar_raw
